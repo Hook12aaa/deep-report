@@ -117,10 +117,31 @@ async function measureHtmlPage(htmlPath) {
         return "rgb(255, 255, 255)";
       }
 
-      return { contentLeft, contentRight, contentWidth, figures, textElements };
+      const headings = [...document.querySelectorAll("h1, h2, h3, h4")].map((h) => {
+        const r = h.getBoundingClientRect();
+        const next = (() => {
+          let n = h.nextElementSibling;
+          while (n && /^H[1-6]$/.test(n.tagName)) n = n.nextElementSibling;
+          return n ? n.getBoundingClientRect() : null;
+        })();
+        return {
+          level: +h.tagName.slice(1),
+          text: (h.textContent ?? "").trim().slice(0, 80),
+          top: r.top,
+          bottom: r.bottom,
+          nextTop: next ? next.top : null,
+        };
+      });
+
+      const allTextRects = [...document.querySelectorAll("p, li, td, th, figcaption, h1, h2, h3, h4, h5, h6")].map((el) => {
+        const r = el.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+      });
+
+      return { contentLeft, contentRight, contentWidth, figures, textElements, headings, allTextRects };
     }, { MM_TO_PX, MARGIN_LEFT_MM, MARGIN_RIGHT_MM, PAGE_W_MM });
 
-    return measurements;
+    return { ...measurements, contentHeightPx, contentWidthPx };
   } finally {
     await browser.close();
   }
