@@ -22,3 +22,8 @@ test("sentenceStats returns mean, max, stdev over word counts", () => {
   assert.equal(s.max, 6);
   assert.ok(s.stdev > 0);
 });
+
+test("maxParagraphWords returns largest paragraph by word count", () => {
+  const text = "Short para.\n\nLonger paragraph with more words inside it.\n\nMid one here.";
+  assert.equal(maxParagraphWords(text), 7);
+});

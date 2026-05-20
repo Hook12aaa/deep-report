@@ -42,7 +42,11 @@ export function sentenceStats(text) {
   const stdev = Math.sqrt(variance);
   return { counts, mean, max, stdev };
 }
-export function maxParagraphWords(_text) { return 0; }
+export function maxParagraphWords(text) {
+  const paragraphs = splitParagraphs(text);
+  if (paragraphs.length === 0) return 0;
+  return Math.max(...paragraphs.map((p) => splitWords(p).length));
+}
 export function hedgeDensity(_text, _denylist) { return 0; }
 export function repeatedBigramPercent(_text) { return 0; }
 export function mattr(_text, _window) { return 0; }
