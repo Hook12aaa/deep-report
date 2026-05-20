@@ -41,3 +41,14 @@ test("hedgeDensity is zero when no hedges present", () => {
   const denylist = new Set(["may", "might"]);
   assert.equal(hedgeDensity("Clear assertion. Concrete fact.", denylist), 0);
 });
+
+test("repeatedBigramPercent on text with deliberate repetition", () => {
+  const text = "the cat sat. the cat sat. fresh prose follows.";
+  const pct = repeatedBigramPercent(text);
+  assert.ok(pct > 0, `expected pct > 0 (got ${pct})`);
+});
+
+test("repeatedBigramPercent on diverse text returns near zero", () => {
+  const text = "alpha beta gamma delta epsilon zeta eta theta iota kappa.";
+  assert.equal(repeatedBigramPercent(text), 0);
+});

@@ -58,6 +58,16 @@ export async function loadHedgeDenylist() {
   const raw = await readFile(HEDGE_LIST_PATH, "utf8");
   return new Set(raw.split("\n").map((w) => w.trim().toLowerCase()).filter((w) => w.length > 0));
 }
-export function repeatedBigramPercent(_text) { return 0; }
+export function repeatedBigramPercent(text) {
+  const words = splitWords(text).map((w) => w.toLowerCase());
+  if (words.length < 2) return 0;
+  const bigrams = [];
+  for (let i = 0; i < words.length - 1; i++) bigrams.push(words[i] + " " + words[i + 1]);
+  const counts = new Map();
+  for (const b of bigrams) counts.set(b, (counts.get(b) ?? 0) + 1);
+  let repeated = 0;
+  for (const c of counts.values()) if (c > 1) repeated += c;
+  return (repeated / bigrams.length) * 100;
+}
 export function mattr(_text, _window) { return 0; }
 export function measureProse(_text) { return null; }
