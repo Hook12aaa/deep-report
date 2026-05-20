@@ -14,6 +14,8 @@ const PRINT_CSS_PATH = resolve(SKILL_ROOT, "assets/print.css");
 export function sanitiseMarkdown(text) {
   let out = text;
   out = out.replace(/^\s*-{3,}\s*$/gm, "");
+  out = out.replace(/<hr\s*\/?>\s*(<h[1-6])/gi, "$1");
+  out = out.replace(/(<\/h[1-6]>)\s*<hr\s*\/?>/gi, "$1");
   return out;
 }
 
