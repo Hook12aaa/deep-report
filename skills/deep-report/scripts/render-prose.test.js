@@ -44,3 +44,30 @@ test("renderCallout emits a blockquote prefixed with the kind", () => {
     "> **Data point:** 1.2 trillion tokens."
   );
 });
+
+test("renderSection joins blocks separated by blank lines", () => {
+  const spec = {
+    section_id: "demo",
+    purpose: "test the dispatcher",
+    audience: "technical",
+    blocks: [
+      { type: "paragraph", topic_sentence: "Lead.", claims: [{ claim: "Follow.", evidence_refs: ["a"] }], max_words: 80 },
+      { type: "why_it_matters", stake: "It matters." },
+      { type: "bullets", items: ["one", "two"] },
+    ],
+  };
+  const out = renderSection(spec);
+  assert.match(out, /^Lead\. Follow\.\n\n\*\*Why it matters:\*\* It matters\.\n\n- one\n- two$/);
+});
+
+test("renderSection idempotent on its own output structure", () => {
+  const spec = {
+    section_id: "demo",
+    purpose: "test",
+    audience: "general",
+    blocks: [{ type: "bullets", items: ["a", "b"] }],
+  };
+  const first = renderSection(spec);
+  const second = renderSection(spec);
+  assert.equal(first, second);
+});
