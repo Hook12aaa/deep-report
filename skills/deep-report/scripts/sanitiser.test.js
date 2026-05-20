@@ -77,3 +77,15 @@ test("sanitiseMarkdown strips 43 --- from the worst-offender fixture", async () 
   const remainingHrLines = (out.match(/^\s*-{3,}\s*$/gm) ?? []).length;
   assert.equal(remainingHrLines, 0);
 });
+
+import { sanitiseWithReport } from "./build-pdf.js";
+
+test("sanitiseWithReport report shape and accurate counts", () => {
+  const input = "## Title\n\n---\n\n<hr>\n<h2>Adjacent</h2>\n\nbody\n\n<hr>\nlone\n";
+  const { sanitised, report } = sanitiseWithReport(input);
+  assert.equal(typeof sanitised, "string");
+  assert.equal(report["strip-hr-line"].occurrences, 1);
+  assert.equal(report["strip-hr-tag"].occurrences, 1, "only the <hr> adjacent to <h2> is counted");
+  assert.equal(report["heading-normalise"].offset, 1);
+  assert.equal(typeof report["blank-collapse"].occurrences, "number");
+});
