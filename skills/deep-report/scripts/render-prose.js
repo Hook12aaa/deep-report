@@ -14,5 +14,9 @@ export function renderWhyItMatters(block) {
 export function renderBullets(block) {
   return block.items.map((s) => `- ${s}`).join("\n");
 }
-export function renderCallout(_block) { return ""; }
+const CALLOUT_LABELS = { caveat: "Caveat", definition: "Definition", data_point: "Data point" };
+export function renderCallout(block) {
+  const label = CALLOUT_LABELS[block.kind];
+  return `> **${label}:** ${block.body}`;
+}
 export function renderSection(_spec) { return ""; }

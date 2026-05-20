@@ -29,3 +29,18 @@ test("renderBullets emits a markdown unordered list", () => {
   const out = renderBullets(block);
   assert.equal(out, "- alpha\n- beta\n- gamma");
 });
+
+test("renderCallout emits a blockquote prefixed with the kind", () => {
+  assert.equal(
+    renderCallout({ type: "callout", kind: "caveat", body: "Numbers from 2024 baseline." }),
+    "> **Caveat:** Numbers from 2024 baseline."
+  );
+  assert.equal(
+    renderCallout({ type: "callout", kind: "definition", body: "Attention: a weighted combination of values." }),
+    "> **Definition:** Attention: a weighted combination of values."
+  );
+  assert.equal(
+    renderCallout({ type: "callout", kind: "data_point", body: "1.2 trillion tokens." }),
+    "> **Data point:** 1.2 trillion tokens."
+  );
+});
