@@ -11,6 +11,26 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = resolve(__dirname, "..");
 const PRINT_CSS_PATH = resolve(SKILL_ROOT, "assets/print.css");
 
+export function sanitiseMarkdown(text) {
+  let out = text;
+  out = out.replace(/^\s*-{3,}\s*$/gm, "");
+  out = out.replace(/(<hr\s*\/?>\s*)+(<h[1-6])/gi, "$2");
+  out = out.replace(/(<\/h[1-6]>)(\s*<hr\s*\/?>)+/gi, "$1");
+  out = out.replace(/^\s*<hr\s*\/?>\s*$/gim, "");
+
+  const headingMatches = [...out.matchAll(/^(#{1,6})\s+/gm)];
+  if (headingMatches.length > 0) {
+    const minLevel = Math.min(...headingMatches.map((m) => m[1].length));
+    const offset = minLevel - 1;
+    if (offset > 0) {
+      out = out.replace(/^(#{1,6})(\s+)/gm, (_, hashes, sp) => "#".repeat(hashes.length - offset) + sp);
+    }
+  }
+
+  out = out.replace(/\n{3,}/g, "\n\n");
+  return out;
+}
+
 function parseArgs(argv) {
   const args = { draft: null, specs: null, out: null, html: null };
   for (let i = 0; i < argv.length; i++) {
@@ -88,7 +108,10 @@ function renderMarkdown(text) {
     const heading = block.match(/^(#{1,6})\s+(.*)$/);
     if (heading) {
       const level = heading[1].length;
-      out.push(`<h${level}>${renderMarkdownInline(heading[2])}</h${level}>`);
+      const isH1 = level === 1;
+      const seenH1Before = out.some((html) => /^<h1\b/.test(html));
+      const cls = isH1 && seenH1Before ? ' class="chapter"' : "";
+      out.push(`<h${level}${cls}>${renderMarkdownInline(heading[2])}</h${level}>`);
       continue;
     }
     if (/^[-*]\s+/m.test(block) && block.split("\n").every((l) => /^[-*]\s+/.test(l) || /^\s+\S/.test(l))) {
@@ -114,9 +137,28 @@ function substituteFigures(html, renderedById) {
   });
 }
 
+function countOccurrences(re, text) {
+  return (text.match(re) ?? []).length;
+}
+
+export function sanitiseWithReport(text) {
+  const before = text;
+  const sanitised = sanitiseMarkdown(text);
+  const headings = [...before.matchAll(/^(#{1,6})\s+/gm)];
+  const minLevel = headings.length ? Math.min(...headings.map((m) => m[1].length)) : 1;
+  const report = {
+    "strip-hr-line":     { occurrences: countOccurrences(/^\s*-{3,}\s*$/gm, before) },
+    "strip-hr-tag":      { occurrences: countOccurrences(/<hr\s*\/?>/gi, before) },
+    "heading-normalise": { offset: Math.max(0, minLevel - 1) },
+    "blank-collapse":    { occurrences: countOccurrences(/\n{3,}/g, before) },
+  };
+  return { sanitised, report };
+}
+
 async function buildDocument(draftMd, renderedById, css) {
-  const body = substituteFigures(renderMarkdown(draftMd), renderedById);
-  return `<!doctype html>
+  const { sanitised, report: sanitiserReport } = sanitiseWithReport(draftMd);
+  const body = substituteFigures(renderMarkdown(sanitised), renderedById);
+  return { html: `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -130,7 +172,7 @@ ${css}
 ${body}
 </main>
 </body>
-</html>`;
+</html>`, sanitiserReport };
 }
 
 async function printToPdf(htmlPath, outPath) {
@@ -177,11 +219,14 @@ if (invokedAsCli) {
   }
 
   const css = await readFile(PRINT_CSS_PATH, "utf8");
-  const fullHtml = await buildDocument(draftMd, renderedById, css);
+  const { html: fullHtml, sanitiserReport } = await buildDocument(draftMd, renderedById, css);
 
   const htmlPath = args.html ?? resolve(dirname(args.out), basename(args.out, extname(args.out)) + ".html");
   await mkdir(dirname(htmlPath), { recursive: true });
   await writeFile(htmlPath, fullHtml);
+
+  const sanitiserReportPath = resolve(dirname(args.out), basename(args.out, extname(args.out)) + ".sanitiser.json");
+  await writeFile(sanitiserReportPath, JSON.stringify(sanitiserReport, null, 2));
 
   await mkdir(dirname(args.out), { recursive: true });
   await printToPdf(htmlPath, args.out);
@@ -191,6 +236,7 @@ if (invokedAsCli) {
     specs: args.specs ?? null,
     html: htmlPath,
     pdf: args.out,
+    sanitiserReport: sanitiserReportPath,
     figures: [...renderedById.entries()].map(([id, r]) => ({ id, family: r.family, verdict: r.report.verdict })),
   };
   process.stdout.write(JSON.stringify(report, null, 2) + "\n");

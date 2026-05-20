@@ -117,10 +117,31 @@ async function measureHtmlPage(htmlPath) {
         return "rgb(255, 255, 255)";
       }
 
-      return { contentLeft, contentRight, contentWidth, figures, textElements };
+      const headings = [...document.querySelectorAll("h1, h2, h3, h4")].map((h) => {
+        const r = h.getBoundingClientRect();
+        const next = (() => {
+          let n = h.nextElementSibling;
+          while (n && /^H[1-6]$/.test(n.tagName)) n = n.nextElementSibling;
+          return n ? n.getBoundingClientRect() : null;
+        })();
+        return {
+          level: +h.tagName.slice(1),
+          text: (h.textContent ?? "").trim().slice(0, 80),
+          top: r.top,
+          bottom: r.bottom,
+          nextTop: next ? next.top : null,
+        };
+      });
+
+      const allTextRects = [...document.querySelectorAll("p, li, td, th, figcaption, h1, h2, h3, h4, h5, h6")].map((el) => {
+        const r = el.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+      });
+
+      return { contentLeft, contentRight, contentWidth, figures, textElements, headings, allTextRects };
     }, { MM_TO_PX, MARGIN_LEFT_MM, MARGIN_RIGHT_MM, PAGE_W_MM });
 
-    return measurements;
+    return { ...measurements, contentHeightPx, contentWidthPx };
   } finally {
     await browser.close();
   }
@@ -171,6 +192,60 @@ function checkTextContrast(textElements) {
   };
 }
 
+export function checkOrphanHeading(headings, contentHeightPx, tolerance = 0.08) {
+  const orphanThresholdPx = contentHeightPx * tolerance;
+  const failures = [];
+  const measured = headings.map((h) => {
+    const pageNumber = Math.floor(h.bottom / contentHeightPx);
+    const pageBottom = (pageNumber + 1) * contentHeightPx;
+    const distanceToPageEnd = pageBottom - h.bottom;
+    const nextOnSamePage = h.nextTop !== null && Math.floor(h.nextTop / contentHeightPx) === pageNumber;
+    const orphan = distanceToPageEnd < orphanThresholdPx && !nextOnSamePage;
+    const record = { level: h.level, text: h.text, pageIndex: pageNumber, distanceToPageEnd };
+    if (orphan) failures.push(record);
+    return record;
+  });
+  return {
+    name: "no-orphan-heading",
+    measured,
+    tolerance: `${(tolerance * 100).toFixed(0)}% of page height`,
+    pass: failures.length === 0,
+    failures,
+  };
+}
+
+export function checkBlankPage(allTextRects, contentHeightPx, contentWidthPx, threshold = 0.10) {
+  const totalContent = allTextRects.reduce((m, r) => Math.max(m, r.bottom), 0);
+  const pageCount = Math.max(1, Math.ceil(totalContent / contentHeightPx));
+  const pageArea = contentHeightPx * contentWidthPx;
+  const failures = [];
+  const measured = [];
+  for (let p = 0; p < pageCount; p++) {
+    const top = p * contentHeightPx;
+    const bottom = (p + 1) * contentHeightPx;
+    let covered = 0;
+    for (const r of allTextRects) {
+      const ix1 = Math.max(r.top, top);
+      const ix2 = Math.min(r.bottom, bottom);
+      if (ix2 <= ix1) continue;
+      const w = Math.min(r.right, contentWidthPx) - Math.max(r.left, 0);
+      if (w <= 0) continue;
+      covered += (ix2 - ix1) * w;
+    }
+    const density = covered / pageArea;
+    const record = { pageIndex: p, density: Math.round(density * 10000) / 10000 };
+    measured.push(record);
+    if (density < threshold) failures.push(record);
+  }
+  return {
+    name: "no-blank-page",
+    measured,
+    tolerance: `${(threshold * 100).toFixed(0)}% text density`,
+    pass: failures.length === 0,
+    failures,
+  };
+}
+
 function stripPdfMetadataBytes(buf) {
   const lines = buf.toString("latin1").split("\n");
   return lines
@@ -200,7 +275,12 @@ if (invokedAsCli) {
   }
 
   const m = await measureHtmlPage(args.html);
-  const checks = [checkFigureFit(m.figures, m.contentWidth), checkTextContrast(m.textElements)];
+  const checks = [
+    checkFigureFit(m.figures, m.contentWidth),
+    checkTextContrast(m.textElements),
+    checkOrphanHeading(m.headings, m.contentHeightPx),
+    checkBlankPage(m.allTextRects, m.contentHeightPx, m.contentWidthPx),
+  ];
   if (args.pdf) {
     checks.push(await checkDeterminism(args.pdf, args.secondPdf));
   }

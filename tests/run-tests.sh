@@ -23,6 +23,14 @@ for t in "${HERE}/hooks/"*.sh; do
   [[ -f "$t" ]] && run_test "$t"
 done
 
+if [[ -f "${HERE}/drift-check.sh" ]]; then
+  run_test "${HERE}/drift-check.sh"
+fi
+
+if [[ -f "${HERE}/integration-gates.sh" ]]; then
+  run_test "${HERE}/integration-gates.sh"
+fi
+
 if (( fail )); then
   echo "tests failed"
   exit 1

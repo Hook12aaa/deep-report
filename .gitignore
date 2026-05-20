@@ -8,6 +8,7 @@ out/
 report/
 .skill-cheat-qa/
 .claude/
+docs/
 
 *.pdf
 *.html.bak
