@@ -69,5 +69,15 @@ export function repeatedBigramPercent(text) {
   for (const c of counts.values()) if (c > 1) repeated += c;
   return (repeated / bigrams.length) * 100;
 }
-export function mattr(_text, _window) { return 0; }
+export function mattr(text, window) {
+  const words = splitWords(text).map((w) => w.toLowerCase());
+  if (words.length === 0) return 0;
+  if (words.length <= window) return new Set(words).size / words.length;
+  const ratios = [];
+  for (let i = 0; i + window <= words.length; i++) {
+    const slice = words.slice(i, i + window);
+    ratios.push(new Set(slice).size / window);
+  }
+  return ratios.reduce((a, b) => a + b, 0) / ratios.length;
+}
 export function measureProse(_text) { return null; }

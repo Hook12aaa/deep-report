@@ -52,3 +52,21 @@ test("repeatedBigramPercent on diverse text returns near zero", () => {
   const text = "alpha beta gamma delta epsilon zeta eta theta iota kappa.";
   assert.equal(repeatedBigramPercent(text), 0);
 });
+
+test("mattr returns 1.0 for a 100-token window of unique words", () => {
+  const text = Array.from({ length: 120 }, (_, i) => `word${i}`).join(" ") + ".";
+  const m = mattr(text, 100);
+  assert.equal(m, 1.0);
+});
+
+test("mattr is below 1.0 when words repeat heavily", () => {
+  const text = Array.from({ length: 120 }, () => "same").join(" ") + ".";
+  const m = mattr(text, 100);
+  assert.ok(m < 0.5, `expected m < 0.5 (got ${m})`);
+});
+
+test("mattr returns TTR over full text when text shorter than window", () => {
+  const text = "alpha beta gamma alpha.";
+  const m = mattr(text, 100);
+  assert.equal(m, 3 / 4);
+});
