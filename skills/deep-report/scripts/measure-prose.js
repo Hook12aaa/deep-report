@@ -80,4 +80,54 @@ export function mattr(text, window) {
   }
   return ratios.reduce((a, b) => a + b, 0) / ratios.length;
 }
-export function measureProse(_text) { return null; }
+const DEFAULT_TOLERANCES = {
+  colemanLiauMin: 9,
+  colemanLiauMax: 16,
+  meanSentMin: 12,
+  meanSentMax: 24,
+  maxSent: 40,
+  sentStdevMin: 4.0,
+  paragraphMax: 120,
+  hedgePer1000Max: 15,
+  repeatedBigramPctMax: 8,
+  mattrMin: 0.60,
+};
+
+export async function measureProse(text, opts = {}) {
+  const tol = { ...DEFAULT_TOLERANCES, ...(opts.tolerances ?? {}) };
+  const denylist = opts.denylist ?? (await loadHedgeDenylist());
+
+  const cli = colemanLiau(text);
+  const stats = sentenceStats(text);
+  const maxPara = maxParagraphWords(text);
+  const hedges = hedgeDensity(text, denylist);
+  const bigramPct = repeatedBigramPercent(text);
+  const mattrScore = mattr(text, 100);
+
+  const checks = [
+    { name: "coleman-liau", measured: cli, tolerance: `${tol.colemanLiauMin} <= CLI <= ${tol.colemanLiauMax}`, pass: cli >= tol.colemanLiauMin && cli <= tol.colemanLiauMax },
+    { name: "mean-sentence-length", measured: stats.mean, tolerance: `${tol.meanSentMin} <= mean <= ${tol.meanSentMax}`, pass: stats.mean >= tol.meanSentMin && stats.mean <= tol.meanSentMax },
+    { name: "max-sentence-length", measured: stats.max, tolerance: `<= ${tol.maxSent}`, pass: stats.max <= tol.maxSent },
+    { name: "sentence-length-stdev", measured: stats.stdev, tolerance: `>= ${tol.sentStdevMin}`, pass: stats.stdev >= tol.sentStdevMin },
+    { name: "max-paragraph-words", measured: maxPara, tolerance: `<= ${tol.paragraphMax}`, pass: maxPara <= tol.paragraphMax },
+    { name: "hedge-density", measured: hedges, tolerance: `<= ${tol.hedgePer1000Max} per 1000 words`, pass: hedges <= tol.hedgePer1000Max },
+    { name: "repeated-bigram-pct", measured: bigramPct, tolerance: `<= ${tol.repeatedBigramPctMax}%`, pass: bigramPct <= tol.repeatedBigramPctMax },
+    { name: "mattr-100", measured: mattrScore, tolerance: `>= ${tol.mattrMin}`, pass: mattrScore >= tol.mattrMin },
+  ];
+
+  const verdict = checks.every((c) => c.pass) ? "pass" : "fail";
+  return { verdict, checks };
+}
+
+const invokedAsCli = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
+if (invokedAsCli) {
+  const [textPath] = process.argv.slice(2);
+  if (!textPath) {
+    console.error("usage: measure-prose.js <markdown-file>");
+    process.exit(64);
+  }
+  const text = await readFile(textPath, "utf8");
+  const report = await measureProse(text);
+  process.stdout.write(JSON.stringify(report, null, 2) + "\n");
+  process.exit(report.verdict === "pass" ? 0 : 1);
+}

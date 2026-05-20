@@ -70,3 +70,20 @@ test("mattr returns TTR over full text when text shorter than window", () => {
   const m = mattr(text, 100);
   assert.equal(m, 3 / 4);
 });
+
+test("measureProse returns verdict pass when all metrics inside tolerance", async () => {
+  const text = "Attention won the architecture race. Vision and language models converged on attention. Scaling laws explain why. Compute beats inductive bias above a threshold.\n\nThe convergence has cost. Domain-specific intuition no longer wins. Architecture choice is no longer the dominant variable.";
+  const denylist = new Set(["may", "might", "could"]);
+  const report = await measureProse(text, { denylist });
+  assert.equal(typeof report.verdict, "string");
+  assert.ok(Array.isArray(report.checks));
+  assert.ok(report.checks.length >= 8);
+});
+
+test("measureProse fails when hedge density too high", async () => {
+  const text = "It may rain. It might snow. It could hail. It may be cold. It might freeze. It could ice.";
+  const denylist = new Set(["may", "might", "could"]);
+  const report = await measureProse(text, { denylist });
+  const hedgeCheck = report.checks.find((c) => c.name === "hedge-density");
+  assert.equal(hedgeCheck.pass, false);
+});
