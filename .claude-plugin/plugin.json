@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "deep-report",
+  "version": "0.1.0",
+  "description": "Generate deep-dive, claim-verified research PDFs from a topic via decomposition, per-component research subagents, a claim verification sidecar, and HTML-to-PDF rendering.",
+  "author": {
+    "name": "Anton Chepaldin",
+    "email": "anton.100chepaldin@gmail.com"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/hook12aaa/deep-report",
+  "repository": "https://github.com/hook12aaa/deep-report",
+  "keywords": [
+    "research",
+    "pdf",
+    "report",
+    "verification",
+    "claim-grounding",
+    "skills"
+  ]
+}

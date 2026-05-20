@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "hardGates": [
+    {"id": 1, "body": "Do NOT proceed without an explicit topic, voice anchor, and depth mode declared by the user. STOP and ask."},
+    {"id": 2, "body": "Do NOT enter the render stage until every load-bearing claim carries a verifier verdict. STOP and emit CLAIMS_UNVERIFIED."},
+    {"id": 3, "body": "Never emit a figure whose layout is scattered or free-form. STOP and re-spec the figure as a hierarchical or structured layout."},
+    {"id": 4, "body": "Never produce the final PDF from a path other than rendered HTML. STOP and re-route through the HTML renderer."},
+    {"id": 5, "body": "Do NOT emit REPORT_SHIPPED unless every extracted claim is verified. STOP and emit CLAIMS_UNVERIFIED."}
+  ],
+  "gateFunctions": [
+    {"before": "spawning research subagents", "question": "Has the user named topic, voice anchor, and depth mode?"},
+    {"before": "accepting a figure spec", "question": "Is this layout one of the four permitted families: hierarchy, sequence, matrix, or table?"},
+    {"before": "entering render", "question": "Does every load-bearing claim resolve to a `verified` verdict?"},
+    {"before": "marking a claim verified", "question": "Does the citation point to a primary source the verifier fetches, not a memorized fact?"},
+    {"before": "emitting REPORT_SHIPPED", "question": "Did the renderer go from styled HTML to PDF without passing through a Python PDF library?"}
+  ],
+  "antiPatternFirstSentence": "\"I can write this report in one shot without verification\" — single-pass write-ups produce confident, fluent prose with hallucinated specifics (e.g., naming the wrong rail operator for a route).",
+  "checklistSteps": [
+    "Confirm topic, voice anchor, and depth mode with the user.",
+    "Decompose the topic into core components.",
+    "Spawn one research subagent per component and collect their markdown drafts.",
+    "Extract every load-bearing claim into a claims ledger.",
+    "Run the claim verification sidecar against each claim and record verdicts.",
+    "Synthesize the verified component drafts into one unified document in the chosen voice and depth.",
+    "Spec every figure as a structured or hierarchical layout, refuse scattered layouts.",
+    "Render the document as styled HTML, then print to PDF.",
+    "Emit the verdict token."
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "skillName": "deep-report",
+  "cases": [
+    {
+      "query": "<TODO: realistic user prompt matching trigger: /deep-report>",
+      "shouldTrigger": true,
+      "note": "derived from trigger kind=slash value=/deep-report",
+      "id": 1
+    },
+    {
+      "query": "<TODO: trigger-collision case — shares keywords with adjacent skill>",
+      "shouldTrigger": false,
+      "note": "adversarial/trigger-collision",
+      "id": 2
+    },
+    {
+      "query": "<TODO: instruction-injection case — embedded coerce-to-trigger prose>",
+      "shouldTrigger": false,
+      "note": "adversarial/instruction-injection",
+      "id": 3
+    },
+    {
+      "query": "",
+      "shouldTrigger": false,
+      "note": "adversarial/degenerate-prompt",
+      "id": 4
+    },
+    {
+      "query": "<TODO: single-keyword-without-context case>",
+      "shouldTrigger": false,
+      "note": "adversarial/keyword-without-context",
+      "id": 5
+    },
+    {
+      "query": "<TODO: cross-skill-ambiguity case — sibling skill should win>",
+      "shouldTrigger": false,
+      "note": "adversarial/cross-skill-ambiguity",
+      "id": 6
+    }
+  ]
+}

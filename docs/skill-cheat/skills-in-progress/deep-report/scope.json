@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "name": "deep-report",
+  "slashCommand": "/deep-report",
+  "triggers": [
+    {"kind": "slash", "value": "/deep-report"}
+  ],
+  "verdicts": ["REPORT_SHIPPED", "CLAIMS_UNVERIFIED", "SCOPE_TOO_VAGUE"],
+  "antiPattern": "\"I can write this report in one shot without verification\"",
+  "targetPath": "/Users/hook/Documents/coding/python/Personal_AI  Projects/report",
+  "pluginMode": "new"
+}

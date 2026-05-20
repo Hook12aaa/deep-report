@@ -1,0 +1,13 @@
+node_modules/
+skills/*/node_modules/
+*.log
+.DS_Store
+
+tmp/
+out/
+report/
+.skill-cheat-qa/
+.claude/
+
+*.pdf
+*.html.bak

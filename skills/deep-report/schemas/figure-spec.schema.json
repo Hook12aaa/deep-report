@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deep-report/figure-spec.schema.json",
+  "title": "deep-report figure spec",
+  "description": "Discriminated union on family. The spec-author subagent emits exactly one of these per figure. No SVG, no Mermaid, no DOT — only structured JSON.",
+  "oneOf": [
+    { "$ref": "#/$defs/hierarchy" },
+    { "$ref": "#/$defs/sequence" },
+    { "$ref": "#/$defs/matrix" },
+    { "$ref": "#/$defs/table" }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+      "maxLength": 32
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 48
+    },
+    "hierarchy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "id", "caption", "root", "nodes", "edges"],
+      "properties": {
+        "family": { "const": "hierarchy" },
+        "id": { "$ref": "#/$defs/id" },
+        "caption": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "root": { "$ref": "#/$defs/id" },
+        "nodes": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "label": { "$ref": "#/$defs/label" },
+              "parent": { "$ref": "#/$defs/id" }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to"],
+            "properties": {
+              "from": { "$ref": "#/$defs/id" },
+              "to": { "$ref": "#/$defs/id" },
+              "label": { "type": "string", "maxLength": 24 }
+            }
+          }
+        }
+      }
+    },
+    "sequence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "id", "caption", "steps"],
+      "properties": {
+        "family": { "const": "sequence" },
+        "id": { "$ref": "#/$defs/id" },
+        "caption": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "label": { "$ref": "#/$defs/label" }
+            }
+          }
+        }
+      }
+    },
+    "matrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "id", "caption", "rows", "cols", "cells"],
+      "properties": {
+        "family": { "const": "matrix" },
+        "id": { "$ref": "#/$defs/id" },
+        "caption": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "label": { "$ref": "#/$defs/label" }
+            }
+          }
+        },
+        "cols": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "label": { "$ref": "#/$defs/label" }
+            }
+          }
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string", "maxLength": 24 }
+          }
+        }
+      }
+    },
+    "table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "id", "caption", "columns", "rows"],
+      "properties": {
+        "family": { "const": "table" },
+        "id": { "$ref": "#/$defs/id" },
+        "caption": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "columns": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "label": { "$ref": "#/$defs/label" },
+              "type": { "enum": ["text", "num"] },
+              "align": { "enum": ["left", "right", "center"] }
+            }
+          }
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 40,
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                { "type": "string", "maxLength": 80 },
+                { "type": "number" },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["value"],
+                  "properties": {
+                    "value": { "oneOf": [{ "type": "string" }, { "type": "number" }] },
+                    "emphasis": { "type": "boolean" }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
