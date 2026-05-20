@@ -214,8 +214,36 @@ export function checkOrphanHeading(headings, contentHeightPx, tolerance = 0.08) 
   };
 }
 
-export function checkBlankPage() {
-  throw new Error("checkBlankPage not implemented yet — coming in Task 14");
+export function checkBlankPage(allTextRects, contentHeightPx, contentWidthPx, threshold = 0.10) {
+  const totalContent = allTextRects.reduce((m, r) => Math.max(m, r.bottom), 0);
+  const pageCount = Math.max(1, Math.ceil(totalContent / contentHeightPx));
+  const pageArea = contentHeightPx * contentWidthPx;
+  const failures = [];
+  const measured = [];
+  for (let p = 0; p < pageCount; p++) {
+    const top = p * contentHeightPx;
+    const bottom = (p + 1) * contentHeightPx;
+    let covered = 0;
+    for (const r of allTextRects) {
+      const ix1 = Math.max(r.top, top);
+      const ix2 = Math.min(r.bottom, bottom);
+      if (ix2 <= ix1) continue;
+      const w = Math.min(r.right, contentWidthPx) - Math.max(r.left, 0);
+      if (w <= 0) continue;
+      covered += (ix2 - ix1) * w;
+    }
+    const density = covered / pageArea;
+    const record = { pageIndex: p, density: Math.round(density * 10000) / 10000 };
+    measured.push(record);
+    if (density < threshold) failures.push(record);
+  }
+  return {
+    name: "no-blank-page",
+    measured,
+    tolerance: `${(threshold * 100).toFixed(0)}% text density`,
+    pass: failures.length === 0,
+    failures,
+  };
 }
 
 function stripPdfMetadataBytes(buf) {

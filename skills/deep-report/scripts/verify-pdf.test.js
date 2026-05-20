@@ -23,3 +23,19 @@ test("checkOrphanHeading passes when heading is in top 92% of page", () => {
   const r = checkOrphanHeading(headings, PAGE_H);
   assert.equal(r.pass, true);
 });
+
+test("checkBlankPage flags pages below 10% text density", () => {
+  const rects = [
+    { top: 10,   bottom: 30,   left: 0, right: 50 },
+    { top: 1010, bottom: 1030, left: 0, right: 50 },
+  ];
+  const r = checkBlankPage(rects, PAGE_H, 612);
+  assert.equal(r.pass, false);
+  assert.equal(r.failures.length, 2);
+});
+
+test("checkBlankPage passes when page covered above threshold", () => {
+  const rects = [{ top: 0, bottom: 800, left: 0, right: 612 }];
+  const r = checkBlankPage(rects, PAGE_H, 612);
+  assert.equal(r.pass, true);
+});
