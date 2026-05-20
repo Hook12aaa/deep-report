@@ -47,7 +47,17 @@ export function maxParagraphWords(text) {
   if (paragraphs.length === 0) return 0;
   return Math.max(...paragraphs.map((p) => splitWords(p).length));
 }
-export function hedgeDensity(_text, _denylist) { return 0; }
+export function hedgeDensity(text, denylist) {
+  const words = splitWords(text).map((w) => w.toLowerCase());
+  if (words.length === 0) return 0;
+  const hedges = words.filter((w) => denylist.has(w)).length;
+  return (hedges / words.length) * 1000;
+}
+
+export async function loadHedgeDenylist() {
+  const raw = await readFile(HEDGE_LIST_PATH, "utf8");
+  return new Set(raw.split("\n").map((w) => w.trim().toLowerCase()).filter((w) => w.length > 0));
+}
 export function repeatedBigramPercent(_text) { return 0; }
 export function mattr(_text, _window) { return 0; }
 export function measureProse(_text) { return null; }
