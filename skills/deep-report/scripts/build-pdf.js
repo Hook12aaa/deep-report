@@ -11,6 +11,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = resolve(__dirname, "..");
 const PRINT_CSS_PATH = resolve(SKILL_ROOT, "assets/print.css");
 
+export function sanitiseMarkdown(text) {
+  let out = text;
+  out = out.replace(/^\s*-{3,}\s*$/gm, "");
+  return out;
+}
+
 function parseArgs(argv) {
   const args = { draft: null, specs: null, out: null, html: null };
   for (let i = 0; i < argv.length; i++) {
