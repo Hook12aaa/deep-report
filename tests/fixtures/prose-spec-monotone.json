@@ -1,0 +1,18 @@
+{
+  "section_id": "intro",
+  "purpose": "Integration test monotone fixture.",
+  "audience": "technical",
+  "thesis": "Uniform sentence length fails the stdev floor.",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "topic_sentence": "Each sentence here uses six total words.",
+      "claims": [
+        {"claim": "Every clause matches its sibling clauses.", "evidence_refs": ["m"]},
+        {"claim": "Word counts hold steady across them.", "evidence_refs": ["m"]},
+        {"claim": "Stdev collapses below tolerance now.", "evidence_refs": ["m"]}
+      ],
+      "max_words": 80
+    }
+  ]
+}

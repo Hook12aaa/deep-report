@@ -156,6 +156,61 @@ else
 fi
 
 #--------------------------------------------------------------------------------
+printf "\n=== Fixture E: passing prose spec renders and measures clean ===\n"
+E_OUT="$WORK/prose-pass"
+mkdir -p "$E_OUT/specs"
+cp "$FIXTURES/prose-spec-pass.json" "$E_OUT/specs/intro.spec.json"
+cat > "$E_OUT/draft.md" <<'EOF'
+# Prose pass
+
+{{prose:intro}}
+EOF
+build_pdf_with_prose() {
+  local draft="$1" specs="$2" outdir="$3"
+  mkdir -p "$outdir"
+  (cd "$SKILL_DIR" && node scripts/build-pdf.js --draft "$draft" --prose-specs "$specs" --out "$outdir/report.pdf" --html "$outdir/report.html" >/dev/null 2>&1)
+}
+build_pdf_with_prose "$E_OUT/draft.md" "$E_OUT/specs" "$E_OUT"
+if [[ -f "$E_OUT/report.html" && -f "$E_OUT/report.pdf" ]]; then
+  emit_pass "prose-pass fixture renders both HTML and PDF"
+else
+  emit_fail "prose-pass fixture missing rendered artefacts"
+fi
+
+#--------------------------------------------------------------------------------
+printf "\n=== Fixture F: hedge-heavy spec fails the gate ===\n"
+F_OUT="$WORK/prose-hedge"
+mkdir -p "$F_OUT/specs"
+cp "$FIXTURES/prose-spec-hedge-heavy.json" "$F_OUT/specs/intro.spec.json"
+cat > "$F_OUT/draft.md" <<'EOF'
+# Prose hedge
+
+{{prose:intro}}
+EOF
+mkdir -p "$F_OUT"
+if (cd "$SKILL_DIR" && node scripts/build-pdf.js --draft "$F_OUT/draft.md" --prose-specs "$F_OUT/specs" --out "$F_OUT/report.pdf" --html "$F_OUT/report.html" >/dev/null 2>&1); then
+  emit_fail "hedge-heavy spec should have failed the gate, but build succeeded"
+else
+  emit_pass "hedge-heavy spec fails the build (gate fires)"
+fi
+
+#--------------------------------------------------------------------------------
+printf "\n=== Fixture G: monotone-sentence spec fails the stdev floor ===\n"
+G_OUT="$WORK/prose-monotone"
+mkdir -p "$G_OUT/specs"
+cp "$FIXTURES/prose-spec-monotone.json" "$G_OUT/specs/intro.spec.json"
+cat > "$G_OUT/draft.md" <<'EOF'
+# Prose monotone
+
+{{prose:intro}}
+EOF
+if (cd "$SKILL_DIR" && node scripts/build-pdf.js --draft "$G_OUT/draft.md" --prose-specs "$G_OUT/specs" --out "$G_OUT/report.pdf" --html "$G_OUT/report.html" >/dev/null 2>&1); then
+  emit_fail "monotone spec should have failed the gate, but build succeeded"
+else
+  emit_pass "monotone spec fails the build (stdev floor fires)"
+fi
+
+#--------------------------------------------------------------------------------
 printf "\n=== Summary ===\n"
 printf "  passed: %d\n" "$pass"
 printf "  failed: %d\n" "$fail"
