@@ -5,7 +5,7 @@ import { colemanLiau, sentenceStats, maxParagraphWords, hedgeDensity, repeatedBi
 test("colemanLiau on a known sample", () => {
   const text = "The cat sat on the mat. The dog ran. Birds sing.";
   const cli = colemanLiau(text);
-  assert.ok(cli > 0, `cli > 0 (got ${cli})`);
+  assert.ok(Number.isFinite(cli), `cli must be finite (got ${cli})`);
   assert.ok(cli < 10, `cli < 10 for elementary text (got ${cli})`);
 });
 
@@ -33,7 +33,7 @@ test("hedgeDensity counts hedges per 1000 words against denylist", () => {
   const text = "It may rain. It might snow. It could hail. It will stay dry.";
   const density = hedgeDensity(text, denylist);
   assert.ok(density > 0);
-  const words = 12;
+  const words = 13;
   assert.equal(Math.round(density), Math.round((3 / words) * 1000));
 });
 
