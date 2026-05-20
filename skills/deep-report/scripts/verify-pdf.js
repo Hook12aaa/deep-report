@@ -275,7 +275,12 @@ if (invokedAsCli) {
   }
 
   const m = await measureHtmlPage(args.html);
-  const checks = [checkFigureFit(m.figures, m.contentWidth), checkTextContrast(m.textElements)];
+  const checks = [
+    checkFigureFit(m.figures, m.contentWidth),
+    checkTextContrast(m.textElements),
+    checkOrphanHeading(m.headings, m.contentHeightPx),
+    checkBlankPage(m.allTextRects, m.contentHeightPx, m.contentWidthPx),
+  ];
   if (args.pdf) {
     checks.push(await checkDeterminism(args.pdf, args.secondPdf));
   }
