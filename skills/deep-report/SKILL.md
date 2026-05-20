@@ -141,14 +141,11 @@ Read `references/verifier-protocol.md` for the canonical source-trust order and 
 
 ### 6. Synthesize the verified component drafts into one unified document
 
-One synthesizer pass produces the unified document in the chosen voice and depth. The synthesizer reads:
-
-- Every `report/research/<component-slug>.md` whose claims are all `verified`.
-- `report/claims.jsonl` as the authority on what the report asserts.
-
-The synthesizer must not introduce new facts. If the draft requires a fact that is not in the ledger, the synthesizer marks the gap with `[NEEDS-RESEARCH]` and the pipeline returns to step 3 for that component.
+Dispatch the `synthesizer` subagent (`agents/synthesizer.md`). The subagent runs with fresh context and reads only verified component drafts plus the claims ledger. It is locked to a four-level heading hierarchy (title `#`, Part `##`, Section `###`, Sub-section `####`), refuses to emit `---` horizontal rules or raw `<hr>` tags, and refuses to introduce facts absent from the ledger.
 
 Output goes to `report/draft.md`.
+
+If the subagent cannot complete without violating the contract, it emits one of `REFUSE:needs-research:<component-id>`, `REFUSE:voice-anchor-unfit`, or `REFUSE:depth-mode-mismatch` and the pipeline returns to step 3 for the named component.
 
 ### 7. Spec every figure as a structured layout
 
