@@ -107,7 +107,10 @@ function renderMarkdown(text) {
     const heading = block.match(/^(#{1,6})\s+(.*)$/);
     if (heading) {
       const level = heading[1].length;
-      out.push(`<h${level}>${renderMarkdownInline(heading[2])}</h${level}>`);
+      const isH1 = level === 1;
+      const seenH1Before = out.some((html) => /^<h1\b/.test(html));
+      const cls = isH1 && seenH1Before ? ' class="chapter"' : "";
+      out.push(`<h${level}${cls}>${renderMarkdownInline(heading[2])}</h${level}>`);
       continue;
     }
     if (/^[-*]\s+/m.test(block) && block.split("\n").every((l) => /^[-*]\s+/.test(l) || /^\s+\S/.test(l))) {
