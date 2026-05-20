@@ -16,6 +16,16 @@ export function sanitiseMarkdown(text) {
   out = out.replace(/^\s*-{3,}\s*$/gm, "");
   out = out.replace(/(<hr\s*\/?>\s*)+(<h[1-6])/gi, "$2");
   out = out.replace(/(<\/h[1-6]>)(\s*<hr\s*\/?>)+/gi, "$1");
+
+  const headingMatches = [...out.matchAll(/^(#{1,6})\s+/gm)];
+  if (headingMatches.length > 0) {
+    const minLevel = Math.min(...headingMatches.map((m) => m[1].length));
+    const offset = minLevel - 1;
+    if (offset > 0) {
+      out = out.replace(/^(#{1,6})(\s+)/gm, (_, hashes, sp) => "#".repeat(hashes.length - offset) + sp);
+    }
+  }
+
   return out;
 }
 

@@ -31,3 +31,22 @@ test("strips multiple consecutive <hr> before a heading (idempotence prerequisit
   assert.equal(out, "<h1>Title</h1>");
   assert.equal(sanitiseMarkdown(out), out, "idempotent on chained-hr input");
 });
+
+test("normalises heading levels by min offset", () => {
+  const input = "## Title\n\n### Section\n\nbody\n\n#### Sub\n";
+  const out = sanitiseMarkdown(input);
+  assert.match(out, /^# Title$/m);
+  assert.match(out, /^## Section$/m);
+  assert.match(out, /^### Sub$/m);
+});
+
+test("leaves heading levels unchanged when min is already 1", () => {
+  const input = "# Title\n\n## Part\n\n### Section\n";
+  const out = sanitiseMarkdown(input);
+  assert.equal(out, input);
+});
+
+test("no headings present is a no-op", () => {
+  const input = "Just prose, no headings.\n";
+  assert.equal(sanitiseMarkdown(input), input);
+});
