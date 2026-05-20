@@ -13,3 +13,12 @@ test("colemanLiau is deterministic on the same input", () => {
   const text = "Some prose. With sentences. Three of them.";
   assert.equal(colemanLiau(text), colemanLiau(text));
 });
+
+test("sentenceStats returns mean, max, stdev over word counts", () => {
+  const text = "One word. Two words here. Three more words follow this sentence.";
+  const s = sentenceStats(text);
+  assert.deepEqual(s.counts, [2, 3, 6]);
+  assert.equal(s.mean, (2 + 3 + 6) / 3);
+  assert.equal(s.max, 6);
+  assert.ok(s.stdev > 0);
+});

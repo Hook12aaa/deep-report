@@ -33,7 +33,15 @@ export function colemanLiau(text) {
   return 0.0588 * L - 0.296 * S - 15.8;
 }
 
-export function sentenceStats(_text) { return null; }
+export function sentenceStats(text) {
+  const counts = splitSentences(text).map((s) => splitWords(s).length);
+  if (counts.length === 0) return { counts: [], mean: 0, max: 0, stdev: 0 };
+  const mean = counts.reduce((a, b) => a + b, 0) / counts.length;
+  const max = Math.max(...counts);
+  const variance = counts.reduce((a, b) => a + (b - mean) ** 2, 0) / counts.length;
+  const stdev = Math.sqrt(variance);
+  return { counts, mean, max, stdev };
+}
 export function maxParagraphWords(_text) { return 0; }
 export function hedgeDensity(_text, _denylist) { return 0; }
 export function repeatedBigramPercent(_text) { return 0; }
