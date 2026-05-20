@@ -192,6 +192,32 @@ function checkTextContrast(textElements) {
   };
 }
 
+export function checkOrphanHeading(headings, contentHeightPx, tolerance = 0.08) {
+  const orphanThresholdPx = contentHeightPx * tolerance;
+  const failures = [];
+  const measured = headings.map((h) => {
+    const pageNumber = Math.floor(h.bottom / contentHeightPx);
+    const pageBottom = (pageNumber + 1) * contentHeightPx;
+    const distanceToPageEnd = pageBottom - h.bottom;
+    const nextOnSamePage = h.nextTop !== null && Math.floor(h.nextTop / contentHeightPx) === pageNumber;
+    const orphan = distanceToPageEnd < orphanThresholdPx && !nextOnSamePage;
+    const record = { level: h.level, text: h.text, pageIndex: pageNumber, distanceToPageEnd };
+    if (orphan) failures.push(record);
+    return record;
+  });
+  return {
+    name: "no-orphan-heading",
+    measured,
+    tolerance: `${(tolerance * 100).toFixed(0)}% of page height`,
+    pass: failures.length === 0,
+    failures,
+  };
+}
+
+export function checkBlankPage() {
+  throw new Error("checkBlankPage not implemented yet — coming in Task 14");
+}
+
 function stripPdfMetadataBytes(buf) {
   const lines = buf.toString("latin1").split("\n");
   return lines
