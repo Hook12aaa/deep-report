@@ -63,3 +63,17 @@ test("collapses 3+ blank lines to 2", () => {
   const out = sanitiseMarkdown(input);
   assert.equal(out, "para one\n\npara two\n");
 });
+
+test("sanitiseMarkdown is idempotent on its own output", async () => {
+  const fixture = await readFile(FIXTURE, "utf8");
+  const once = sanitiseMarkdown(fixture);
+  const twice = sanitiseMarkdown(once);
+  assert.equal(once, twice, "second pass changed the output");
+});
+
+test("sanitiseMarkdown strips 43 --- from the worst-offender fixture", async () => {
+  const fixture = await readFile(FIXTURE, "utf8");
+  const out = sanitiseMarkdown(fixture);
+  const remainingHrLines = (out.match(/^\s*-{3,}\s*$/gm) ?? []).length;
+  assert.equal(remainingHrLines, 0);
+});
