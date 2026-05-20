@@ -17,3 +17,9 @@ test("renderParagraph joins topic sentence and claims", () => {
   assert.match(out, /AlexNet dropped error to 15%\./);
   assert.match(out, /Transformers matched RNN baselines\./);
 });
+
+test("renderWhyItMatters emits a bolded one-line stake", () => {
+  const block = { type: "why_it_matters", stake: "Compute is the new bottleneck." };
+  const out = renderWhyItMatters(block);
+  assert.equal(out, "**Why it matters:** Compute is the new bottleneck.");
+});

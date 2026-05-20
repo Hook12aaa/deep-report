@@ -8,7 +8,9 @@ export function renderParagraph(block) {
   return sentences.join(" ");
 }
 
-export function renderWhyItMatters(_block) { return ""; }
+export function renderWhyItMatters(block) {
+  return `**Why it matters:** ${block.stake}`;
+}
 export function renderBullets(_block) { return ""; }
 export function renderCallout(_block) { return ""; }
 export function renderSection(_spec) { return ""; }
