@@ -50,3 +50,10 @@ test("no headings present is a no-op", () => {
   const input = "Just prose, no headings.\n";
   assert.equal(sanitiseMarkdown(input), input);
 });
+
+test("normalises heading levels with offset 2 (draft starts at ###)", () => {
+  const input = "### Title\n\n#### Section\n\nbody\n";
+  const out = sanitiseMarkdown(input);
+  assert.match(out, /^# Title$/m);
+  assert.match(out, /^## Section$/m);
+});
