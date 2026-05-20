@@ -24,3 +24,10 @@ test("strips <hr> adjacent to headings", () => {
   assert.equal(sanitiseMarkdown(b), "<h1>Title</h1>");
   assert.equal(sanitiseMarkdown(c).includes("<hr"), false);
 });
+
+test("strips multiple consecutive <hr> before a heading (idempotence prerequisite)", () => {
+  const input = "<hr>\n<hr/>\n<HR>\n<h1>Title</h1>";
+  const out = sanitiseMarkdown(input);
+  assert.equal(out, "<h1>Title</h1>");
+  assert.equal(sanitiseMarkdown(out), out, "idempotent on chained-hr input");
+});
