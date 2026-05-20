@@ -26,6 +26,7 @@ export function sanitiseMarkdown(text) {
     }
   }
 
+  out = out.replace(/\n{3,}/g, "\n\n");
   return out;
 }
 

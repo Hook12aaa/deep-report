@@ -57,3 +57,9 @@ test("normalises heading levels with offset 2 (draft starts at ###)", () => {
   assert.match(out, /^# Title$/m);
   assert.match(out, /^## Section$/m);
 });
+
+test("collapses 3+ blank lines to 2", () => {
+  const input = "para one\n\n\n\n\npara two\n";
+  const out = sanitiseMarkdown(input);
+  assert.equal(out, "para one\n\npara two\n");
+});
