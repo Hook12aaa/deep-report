@@ -6,39 +6,22 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { render } from "./render-figure.js";
 import { measure } from "./measure-figure.js";
+import { renderSection } from "./render-prose.js";
+import { measureProse, loadHedgeDenylist } from "./measure-prose.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = resolve(__dirname, "..");
 const PRINT_CSS_PATH = resolve(SKILL_ROOT, "assets/print.css");
 
-export function sanitiseMarkdown(text) {
-  let out = text;
-  out = out.replace(/^\s*-{3,}\s*$/gm, "");
-  out = out.replace(/(<hr\s*\/?>\s*)+(<h[1-6])/gi, "$2");
-  out = out.replace(/(<\/h[1-6]>)(\s*<hr\s*\/?>)+/gi, "$1");
-  out = out.replace(/^\s*<hr\s*\/?>\s*$/gim, "");
-
-  const headingMatches = [...out.matchAll(/^(#{1,6})\s+/gm)];
-  if (headingMatches.length > 0) {
-    const minLevel = Math.min(...headingMatches.map((m) => m[1].length));
-    const offset = minLevel - 1;
-    if (offset > 0) {
-      out = out.replace(/^(#{1,6})(\s+)/gm, (_, hashes, sp) => "#".repeat(hashes.length - offset) + sp);
-    }
-  }
-
-  out = out.replace(/\n{3,}/g, "\n\n");
-  return out;
-}
-
 function parseArgs(argv) {
-  const args = { draft: null, specs: null, out: null, html: null };
+  const args = { draft: null, specs: null, out: null, html: null, proseSpecs: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--draft") args.draft = argv[++i];
     else if (a === "--specs") args.specs = argv[++i];
     else if (a === "--out") args.out = argv[++i];
     else if (a === "--html") args.html = argv[++i];
+    else if (a === "--prose-specs") args.proseSpecs = argv[++i];
     else if (a === "--help") args.help = true;
   }
   return args;
@@ -137,28 +120,49 @@ function substituteFigures(html, renderedById) {
   });
 }
 
-function countOccurrences(re, text) {
-  return (text.match(re) ?? []).length;
+async function loadProseSpecs(dir) {
+  if (!dir) return new Map();
+  const entries = await readdir(dir);
+  const out = new Map();
+  for (const e of entries) {
+    if (!e.endsWith(".spec.json")) continue;
+    const path = resolve(dir, e);
+    const spec = JSON.parse(await readFile(path, "utf8"));
+    if (!spec.section_id) throw new Error(`prose spec ${path} missing section_id`);
+    out.set(spec.section_id, { spec, path });
+  }
+  return out;
 }
 
-export function sanitiseWithReport(text) {
-  const before = text;
-  const sanitised = sanitiseMarkdown(text);
-  const headings = [...before.matchAll(/^(#{1,6})\s+/gm)];
-  const minLevel = headings.length ? Math.min(...headings.map((m) => m[1].length)) : 1;
-  const report = {
-    "strip-hr-line":     { occurrences: countOccurrences(/^\s*-{3,}\s*$/gm, before) },
-    "strip-hr-tag":      { occurrences: countOccurrences(/<hr\s*\/?>/gi, before) },
-    "heading-normalise": { offset: Math.max(0, minLevel - 1) },
-    "blank-collapse":    { occurrences: countOccurrences(/\n{3,}/g, before) },
-  };
-  return { sanitised, report };
+async function renderAndMeasureAllProse(specs, denylist) {
+  const rendered = new Map();
+  const failures = [];
+  for (const [id, { spec, path }] of specs) {
+    let md;
+    try {
+      md = renderSection(spec);
+    } catch (err) {
+      failures.push({ section_id: id, path, stage: "render", error: err.message });
+      continue;
+    }
+    const report = await measureProse(md, { denylist });
+    if (report.verdict !== "pass") {
+      failures.push({ section_id: id, path, stage: "measure", report });
+      continue;
+    }
+    rendered.set(id, { md, report });
+  }
+  return { rendered, failures };
 }
 
-async function buildDocument(draftMd, renderedById, css) {
-  const { sanitised, report: sanitiserReport } = sanitiseWithReport(draftMd);
-  const body = substituteFigures(renderMarkdown(sanitised), renderedById);
-  return { html: `<!doctype html>
+async function buildDocument(draftMd, renderedById, renderedProseById, css) {
+  const draftWithProse = draftMd.replace(/\{\{prose:([A-Za-z_][A-Za-z0-9_]*)\}\}/g, (_, id) => {
+    const r = renderedProseById.get(id);
+    if (!r) throw new Error(`prose section '${id}' referenced in draft but not found in --prose-specs dir`);
+    return r.md;
+  });
+  const body = substituteFigures(renderMarkdown(draftWithProse), renderedById);
+  return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -172,7 +176,7 @@ ${css}
 ${body}
 </main>
 </body>
-</html>`, sanitiserReport };
+</html>`;
 }
 
 async function printToPdf(htmlPath, outPath) {
@@ -204,7 +208,7 @@ if (invokedAsCli) {
   const args = parseArgs(process.argv.slice(2));
   if (args.help || !args.draft || !args.out) {
     console.error(
-      "usage: build-pdf.js --draft <draft.md> [--specs <dir>] --out <out.pdf> [--html <out.html>]"
+      "usage: build-pdf.js --draft <draft.md> [--specs <dir>] [--prose-specs <dir>] --out <out.pdf> [--html <out.html>]"
     );
     process.exit(64);
   }
@@ -218,15 +222,21 @@ if (invokedAsCli) {
     process.exit(2);
   }
 
+  const proseSpecs = await loadProseSpecs(args.proseSpecs);
+  const denylist = await loadHedgeDenylist();
+  const { rendered: renderedProseById, failures: proseFailures } = await renderAndMeasureAllProse(proseSpecs, denylist);
+
+  if (proseFailures.length > 0) {
+    console.error(JSON.stringify({ stage: "prose-measure", failures: proseFailures }, null, 2));
+    process.exit(2);
+  }
+
   const css = await readFile(PRINT_CSS_PATH, "utf8");
-  const { html: fullHtml, sanitiserReport } = await buildDocument(draftMd, renderedById, css);
+  const fullHtml = await buildDocument(draftMd, renderedById, renderedProseById, css);
 
   const htmlPath = args.html ?? resolve(dirname(args.out), basename(args.out, extname(args.out)) + ".html");
   await mkdir(dirname(htmlPath), { recursive: true });
   await writeFile(htmlPath, fullHtml);
-
-  const sanitiserReportPath = resolve(dirname(args.out), basename(args.out, extname(args.out)) + ".sanitiser.json");
-  await writeFile(sanitiserReportPath, JSON.stringify(sanitiserReport, null, 2));
 
   await mkdir(dirname(args.out), { recursive: true });
   await printToPdf(htmlPath, args.out);
@@ -234,9 +244,9 @@ if (invokedAsCli) {
   const report = {
     draft: args.draft,
     specs: args.specs ?? null,
+    proseSpecs: args.proseSpecs ?? null,
     html: htmlPath,
     pdf: args.out,
-    sanitiserReport: sanitiserReportPath,
     figures: [...renderedById.entries()].map(([id, r]) => ({ id, family: r.family, verdict: r.report.verdict })),
   };
   process.stdout.write(JSON.stringify(report, null, 2) + "\n");
