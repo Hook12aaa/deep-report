@@ -25,6 +25,15 @@ test("strips <hr> adjacent to headings", () => {
   assert.equal(sanitiseMarkdown(c).includes("<hr"), false);
 });
 
+test("strips standalone <hr> lines regardless of adjacency", () => {
+  const a = "intro\n\n<hr>\n\n## Markdown heading\n\nbody";
+  const b = "## Markdown heading\n<hr>\nbody";
+  const c = "para\n\n<HR>\n\nmore prose";
+  assert.equal(sanitiseMarkdown(a).includes("<hr"), false, "strips <hr> on its own line before a markdown heading");
+  assert.equal(sanitiseMarkdown(b).includes("<hr"), false, "strips <hr> on its own line after a markdown heading");
+  assert.equal(sanitiseMarkdown(c).includes("<HR"), false, "strips uppercase standalone <HR>");
+});
+
 test("strips multiple consecutive <hr> before a heading (idempotence prerequisite)", () => {
   const input = "<hr>\n<hr/>\n<HR>\n<h1>Title</h1>";
   const out = sanitiseMarkdown(input);
@@ -85,7 +94,7 @@ test("sanitiseWithReport report shape and accurate counts", () => {
   const { sanitised, report } = sanitiseWithReport(input);
   assert.equal(typeof sanitised, "string");
   assert.equal(report["strip-hr-line"].occurrences, 1);
-  assert.equal(report["strip-hr-tag"].occurrences, 1, "only the <hr> adjacent to <h2> is counted");
+  assert.equal(report["strip-hr-tag"].occurrences, 2, "both <hr> tags counted; standalone-line rule strips every <hr>");
   assert.equal(report["heading-normalise"].offset, 1);
   assert.equal(typeof report["blank-collapse"].occurrences, "number");
 });

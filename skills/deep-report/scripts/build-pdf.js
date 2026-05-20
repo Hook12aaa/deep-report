@@ -16,6 +16,7 @@ export function sanitiseMarkdown(text) {
   out = out.replace(/^\s*-{3,}\s*$/gm, "");
   out = out.replace(/(<hr\s*\/?>\s*)+(<h[1-6])/gi, "$2");
   out = out.replace(/(<\/h[1-6]>)(\s*<hr\s*\/?>)+/gi, "$1");
+  out = out.replace(/^\s*<hr\s*\/?>\s*$/gim, "");
 
   const headingMatches = [...out.matchAll(/^(#{1,6})\s+/gm)];
   if (headingMatches.length > 0) {
@@ -147,11 +148,7 @@ export function sanitiseWithReport(text) {
   const minLevel = headings.length ? Math.min(...headings.map((m) => m[1].length)) : 1;
   const report = {
     "strip-hr-line":     { occurrences: countOccurrences(/^\s*-{3,}\s*$/gm, before) },
-    "strip-hr-tag":      {
-      occurrences:
-        countOccurrences(/(<hr\s*\/?>\s*)+(?=<h[1-6])/gi, before) +
-        countOccurrences(/(?<=<\/h[1-6]>)(\s*<hr\s*\/?>)+/gi, before),
-    },
+    "strip-hr-tag":      { occurrences: countOccurrences(/<hr\s*\/?>/gi, before) },
     "heading-normalise": { offset: Math.max(0, minLevel - 1) },
     "blank-collapse":    { occurrences: countOccurrences(/\n{3,}/g, before) },
   };
