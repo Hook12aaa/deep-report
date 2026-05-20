@@ -23,3 +23,9 @@ test("renderWhyItMatters emits a bolded one-line stake", () => {
   const out = renderWhyItMatters(block);
   assert.equal(out, "**Why it matters:** Compute is the new bottleneck.");
 });
+
+test("renderBullets emits a markdown unordered list", () => {
+  const block = { type: "bullets", items: ["alpha", "beta", "gamma"] };
+  const out = renderBullets(block);
+  assert.equal(out, "- alpha\n- beta\n- gamma");
+});

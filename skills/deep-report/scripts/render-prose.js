@@ -11,6 +11,8 @@ export function renderParagraph(block) {
 export function renderWhyItMatters(block) {
   return `**Why it matters:** ${block.stake}`;
 }
-export function renderBullets(_block) { return ""; }
+export function renderBullets(block) {
+  return block.items.map((s) => `- ${s}`).join("\n");
+}
 export function renderCallout(_block) { return ""; }
 export function renderSection(_spec) { return ""; }
