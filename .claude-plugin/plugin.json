@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "deep-report",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generate deep-dive, claim-verified research PDFs from a topic via decomposition, per-component research subagents, a claim verification sidecar, and HTML-to-PDF rendering.",
   "author": {
     "name": "Anton Chepaldin",
