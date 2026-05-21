@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0 — 2026-05-20
+
+Prose-spec architecture: the synthesiser becomes a JSON-spec author, a deterministic renderer turns specs into markdown, and an eight-metric measurement gate enforces prose quality alongside the existing figure pipeline.
+
+- New `agents/prose-spec-author.md` subagent — reads verified component drafts plus the claims ledger and emits a `prose-section-spec` (paragraph, why_it_matters, bullets, callout blocks) conforming to `schemas/prose-section-spec.schema.json`. Refuses raw markdown.
+- New `scripts/render-prose.js` — deterministic spec → markdown. Paragraph blocks join `topic_sentence + claims[]`; fixed-shape blocks render template-style. No LLM call in the renderer.
+- New `scripts/measure-prose.js` — eight blocking metrics (Coleman-Liau 9–16, mean sentence 12–24, max sentence ≤40, sentence stdev ≥4, max paragraph ≤120 words, hedge density ≤15/1000, repeated-bigram ≤8%, MATTR-100 ≥0.60). Three advisory metrics (passive voice, heading density, citation density) warn but do not block. Hedge denylist at `assets/hedge-words.txt`.
+- New `references/prose-metrics.md` documenting each metric's formula, tolerance, and honest limit.
+- New verdict `RENDER_FAILED` — gates that previously routed to `CLAIMS_UNVERIFIED` (no-orphan-heading, no-blank-page, figure-fit, prose-measure) now emit `RENDER_FAILED` instead.
+- `scripts/build-pdf.js` accepts `--prose-specs <dir>`, loads specs, renders + measures each section, aborts on any fail. The `sanitiseMarkdown` family is removed — spec-driven prose does not emit `---` or stray `<hr>`.
+- Removed `agents/synthesizer.md`, superseded by `agents/prose-spec-author.md`.
+- New integration fixtures (`tests/fixtures/prose-spec-{pass,hedge-heavy,monotone}.json`) + new `tests/integration-gates.sh` assertions exercising the prose gate end-to-end.
+- New drift markers in `tests/drift-check.sh` for the v0.2 architecture; v0.1.x markers updated to assert the sanitiser removal.
+
+Breaking change for callers wiring directly to `scripts/build-pdf.js`: the `--prose-specs <dir>` flag is now required when the draft contains `{{prose:<id>}}` placeholders. Drafts without placeholders continue to work as in v0.1.1.
+
 ## 0.1.1 — 2026-05-20
 
 Defensive fixes for excessive `<hr>` and blank-page-before-h1 defects.

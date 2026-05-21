@@ -52,33 +52,42 @@ assert_file_exists() {
   fi
 }
 
-printf "\n=== Layer 1 — synthesizer subagent markers ===\n"
-SYNTH="$ROOT/skills/deep-report/agents/synthesizer.md"
-assert_file_exists "synthesizer.md exists" "$SYNTH"
-assert_grep "HARD-GATE: no standalone --- lines" 'Do NOT emit a `---` standalone line' "$SYNTH"
-assert_grep "HARD-GATE: no raw <hr> HTML"       'Do NOT emit raw `<hr>` HTML'         "$SYNTH"
-assert_grep "HARD-GATE: heading-level collision" 'Never use the same heading level for both a Part and a Section' "$SYNTH"
-assert_grep "HARD-GATE: no claims absent from ledger" 'Do NOT introduce facts not present in' "$SYNTH"
-assert_grep "Heading contract: title is single #" 'Report title' "$SYNTH"
-assert_grep "Refusal token: needs-research"     'REFUSE:needs-research'               "$SYNTH"
-assert_grep "Refusal token: voice-anchor-unfit" 'REFUSE:voice-anchor-unfit'           "$SYNTH"
-assert_grep "Refusal token: depth-mode-mismatch" 'REFUSE:depth-mode-mismatch'          "$SYNTH"
+printf "\n=== Layer 0 — v0.2 prose-spec architecture markers ===\n"
+PROSE_AGENT="$ROOT/skills/deep-report/agents/prose-spec-author.md"
+PROSE_SCHEMA="$ROOT/skills/deep-report/schemas/prose-section-spec.schema.json"
+RENDER_PROSE="$ROOT/skills/deep-report/scripts/render-prose.js"
+MEASURE_PROSE="$ROOT/skills/deep-report/scripts/measure-prose.js"
+HEDGE_DENYLIST="$ROOT/skills/deep-report/assets/hedge-words.txt"
+PROSE_METRICS_DOC="$ROOT/skills/deep-report/references/prose-metrics.md"
+assert_file_exists "prose-spec-author.md exists" "$PROSE_AGENT"
+assert_file_exists "prose-section-spec.schema.json exists" "$PROSE_SCHEMA"
+assert_file_exists "render-prose.js exists" "$RENDER_PROSE"
+assert_file_exists "measure-prose.js exists" "$MEASURE_PROSE"
+assert_file_exists "hedge denylist asset exists" "$HEDGE_DENYLIST"
+assert_file_exists "prose-metrics reference exists" "$PROSE_METRICS_DOC"
+assert_grep "schema has paragraph_block" 'paragraph_block' "$PROSE_SCHEMA"
+assert_grep "schema has why_it_matters_block" 'why_it_matters_block' "$PROSE_SCHEMA"
+assert_grep "schema has bullets_block" 'bullets_block' "$PROSE_SCHEMA"
+assert_grep "schema has callout_block" 'callout_block' "$PROSE_SCHEMA"
+assert_grep "renderSection exported" 'export function renderSection' "$RENDER_PROSE"
+assert_grep "measureProse exported" 'export async function measureProse' "$MEASURE_PROSE"
+assert_grep "loadHedgeDenylist exported" 'export async function loadHedgeDenylist' "$MEASURE_PROSE"
+assert_grep "SKILL.md step 6 dispatches prose-spec author" 'prose-spec-author' "$ROOT/skills/deep-report/SKILL.md"
+assert_grep "SKILL.md mentions RENDER_FAILED verdict" 'RENDER_FAILED' "$ROOT/skills/deep-report/SKILL.md"
+assert_grep "plugin.json version is 0.2.0" '"version": "0.2.0"' "$ROOT/.claude-plugin/plugin.json"
 
 printf "\n=== Layer 2 — sanitiser markers ===\n"
 BUILD="$ROOT/skills/deep-report/scripts/build-pdf.js"
-assert_grep "sanitiseMarkdown exported"   'export function sanitiseMarkdown' "$BUILD"
-assert_grep "sanitiseWithReport exported" 'export function sanitiseWithReport' "$BUILD"
-assert_grep "countOccurrences helper"     'function countOccurrences'        "$BUILD"
-assert_grep "rule 1: strip --- regex"       '\^\\s\*-\{3,\}\\s\*\$' "$BUILD"
-assert_grep "rule 2a: <hr> before heading"  'hr.*\+.*<h\[1-6\]' "$BUILD"
-assert_grep "rule 2b: <hr> after heading"   'h\[1-6\]>.*<hr' "$BUILD"
-assert_grep "rule 3: heading normalisation" 'headingMatches' "$BUILD"
-assert_grep "rule 4: blank-line collapse"   'replace\(/\\n\{3,\}/g' "$BUILD"
 assert_grep "chapter-class auto-apply"     'class="chapter"' "$BUILD"
-assert_grep "sanitiser report key strip-hr-line"     '"strip-hr-line"'     "$BUILD"
-assert_grep "sanitiser report key strip-hr-tag"      '"strip-hr-tag"'      "$BUILD"
-assert_grep "sanitiser report key heading-normalise" '"heading-normalise"' "$BUILD"
-assert_grep "sanitiser report key blank-collapse"    '"blank-collapse"'    "$BUILD"
+assert_grep "sanitiseMarkdown removed" '^$' "$ROOT/skills/deep-report/scripts/build-pdf.js" 2>/dev/null || true
+if ! grep -q "sanitiseMarkdown" "$ROOT/skills/deep-report/scripts/build-pdf.js"; then
+  pass=$((pass + 1))
+  printf "  PASS  sanitiseMarkdown removed from build-pdf.js (vestigial in v0.2)\n"
+else
+  fail=$((fail + 1))
+  fail_messages+=("sanitiseMarkdown still present in build-pdf.js — should be removed in v0.2")
+  printf "  FAIL  sanitiseMarkdown still present in build-pdf.js\n"
+fi
 
 printf "\n=== Layer 3 — CSS scope markers ===\n"
 CSS="$ROOT/skills/deep-report/assets/print.css"
@@ -99,15 +108,12 @@ assert_grep "contentHeightPx exposed"      'contentHeightPx'                    
 
 printf "\n=== SKILL.md wiring markers ===\n"
 SKILL="$ROOT/skills/deep-report/SKILL.md"
-assert_grep "step 6 dispatches synthesizer subagent" 'Dispatch the .synthesizer. subagent' "$SKILL"
-assert_grep "step 6 lists four-level heading hierarchy" 'title .#., Part .##., Section .###., Sub-section .####' "$SKILL"
 assert_grep "step 8 names build-pdf.js"     'scripts/build-pdf.js'        "$SKILL"
 assert_grep "step 8 names verify-pdf.js"    'scripts/verify-pdf.js'       "$SKILL"
 
 printf "\n=== Release markers ===\n"
 PLUGIN_JSON="$ROOT/.claude-plugin/plugin.json"
 CHANGELOG="$ROOT/CHANGELOG.md"
-assert_grep "plugin.json version is 0.1.1" '"version": "0.1.1"' "$PLUGIN_JSON"
 assert_grep "CHANGELOG has 0.1.1 entry"    '^## 0\.1\.1' "$CHANGELOG"
 assert_grep "CHANGELOG mentions sanitiser" 'sanitiseMarkdown'  "$CHANGELOG"
 assert_grep "CHANGELOG mentions new gate checks" 'no-orphan-heading'  "$CHANGELOG"

@@ -285,7 +285,13 @@ if (invokedAsCli) {
     checks.push(await checkDeterminism(args.pdf, args.secondPdf));
   }
   const verdict = checks.every((c) => c.pass || c.skipped) ? "pass" : "fail";
-  const report = { verdict, html: args.html, pdf: args.pdf ?? null, checks };
+  const report = {
+    verdict,
+    failureToken: verdict === "fail" ? "RENDER_FAILED" : null,
+    html: args.html,
+    pdf: args.pdf ?? null,
+    checks,
+  };
   const out = JSON.stringify(report, null, 2);
   if (args.out) await writeFile(args.out, out);
   else process.stdout.write(out + "\n");

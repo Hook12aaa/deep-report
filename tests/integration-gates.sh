@@ -80,57 +80,6 @@ else
 fi
 
 #--------------------------------------------------------------------------------
-printf "\n=== Fixture B: --- separators are sanitised away ===\n"
-B_OUT="$WORK/dashes"
-build_pdf "$FIXTURES/dashes-salted.md" "$B_OUT"
-
-if [[ -f "$B_OUT/report.sanitiser.json" ]]; then
-  emit_pass "sanitiser report emitted alongside PDF"
-else
-  emit_fail "sanitiser report missing at $B_OUT/report.sanitiser.json"
-fi
-
-B_STRIPPED="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["strip-hr-line"]["occurrences"])' "$B_OUT/report.sanitiser.json" 2>/dev/null || echo "?")"
-if [[ "$B_STRIPPED" =~ ^[1-9][0-9]*$ ]]; then
-  emit_pass "sanitiser report shows strip-hr-line occurrences=$B_STRIPPED (>0)"
-else
-  emit_fail "sanitiser strip-hr-line should be >0, got '$B_STRIPPED'"
-fi
-
-B_HR_IN_HTML="$(grep -o '<hr' "$B_OUT/report.html" 2>/dev/null | wc -l | tr -d ' ')"
-if [[ "$B_HR_IN_HTML" == "0" ]]; then
-  emit_pass "rendered HTML contains zero <hr> tags"
-else
-  emit_fail "rendered HTML still contains $B_HR_IN_HTML <hr> tag(s)"
-fi
-
-B_VERDICT="$(verify_pdf "$B_OUT" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("verdict",""))' 2>/dev/null || echo "?")"
-if [[ "$B_VERDICT" == "pass" ]]; then
-  emit_pass "sanitised draft verifies clean (verdict=pass)"
-else
-  emit_fail "sanitised draft verdict was '$B_VERDICT', expected 'pass'"
-fi
-
-#--------------------------------------------------------------------------------
-printf "\n=== Fixture C: raw <hr> adjacent to headings is stripped ===\n"
-C_OUT="$WORK/hr-tags"
-build_pdf "$FIXTURES/hr-tags-salted.md" "$C_OUT"
-
-C_HR_IN_HTML="$(grep -o '<hr' "$C_OUT/report.html" 2>/dev/null | wc -l | tr -d ' ')"
-if [[ "$C_HR_IN_HTML" == "0" ]]; then
-  emit_pass "rendered HTML has no <hr> tags after sanitisation"
-else
-  emit_fail "rendered HTML still has $C_HR_IN_HTML <hr> tag(s) after sanitisation"
-fi
-
-C_VERDICT="$(verify_pdf "$C_OUT" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("verdict",""))' 2>/dev/null || echo "?")"
-if [[ "$C_VERDICT" == "pass" ]]; then
-  emit_pass "hr-stripped draft verifies clean"
-else
-  emit_fail "hr-stripped verdict was '$C_VERDICT', expected 'pass'"
-fi
-
-#--------------------------------------------------------------------------------
 printf "\n=== Fixture D: multi-h1 input applies class=\"chapter\" to non-first h1 ===\n"
 D_OUT="$WORK/multi-h1"
 build_pdf "$FIXTURES/multi-h1.md" "$D_OUT"
@@ -153,6 +102,61 @@ if grep -qF "$D_THIRD_H1" "$D_OUT/report.html"; then
   emit_pass "third h1 has class=\"chapter\""
 else
   emit_fail "third h1 missing chapter class"
+fi
+
+#--------------------------------------------------------------------------------
+printf "\n=== Fixture E: passing prose spec renders and measures clean ===\n"
+E_OUT="$WORK/prose-pass"
+mkdir -p "$E_OUT/specs"
+cp "$FIXTURES/prose-spec-pass.json" "$E_OUT/specs/intro.spec.json"
+cat > "$E_OUT/draft.md" <<'EOF'
+# Prose pass
+
+{{prose:intro}}
+EOF
+build_pdf_with_prose() {
+  local draft="$1" specs="$2" outdir="$3"
+  mkdir -p "$outdir"
+  (cd "$SKILL_DIR" && node scripts/build-pdf.js --draft "$draft" --prose-specs "$specs" --out "$outdir/report.pdf" --html "$outdir/report.html" >/dev/null 2>&1)
+}
+build_pdf_with_prose "$E_OUT/draft.md" "$E_OUT/specs" "$E_OUT"
+if [[ -f "$E_OUT/report.html" && -f "$E_OUT/report.pdf" ]]; then
+  emit_pass "prose-pass fixture renders both HTML and PDF"
+else
+  emit_fail "prose-pass fixture missing rendered artefacts"
+fi
+
+#--------------------------------------------------------------------------------
+printf "\n=== Fixture F: hedge-heavy spec fails the gate ===\n"
+F_OUT="$WORK/prose-hedge"
+mkdir -p "$F_OUT/specs"
+cp "$FIXTURES/prose-spec-hedge-heavy.json" "$F_OUT/specs/intro.spec.json"
+cat > "$F_OUT/draft.md" <<'EOF'
+# Prose hedge
+
+{{prose:intro}}
+EOF
+mkdir -p "$F_OUT"
+if (cd "$SKILL_DIR" && node scripts/build-pdf.js --draft "$F_OUT/draft.md" --prose-specs "$F_OUT/specs" --out "$F_OUT/report.pdf" --html "$F_OUT/report.html" >/dev/null 2>&1); then
+  emit_fail "hedge-heavy spec should have failed the gate, but build succeeded"
+else
+  emit_pass "hedge-heavy spec fails the build (gate fires)"
+fi
+
+#--------------------------------------------------------------------------------
+printf "\n=== Fixture G: monotone-sentence spec fails the stdev floor ===\n"
+G_OUT="$WORK/prose-monotone"
+mkdir -p "$G_OUT/specs"
+cp "$FIXTURES/prose-spec-monotone.json" "$G_OUT/specs/intro.spec.json"
+cat > "$G_OUT/draft.md" <<'EOF'
+# Prose monotone
+
+{{prose:intro}}
+EOF
+if (cd "$SKILL_DIR" && node scripts/build-pdf.js --draft "$G_OUT/draft.md" --prose-specs "$G_OUT/specs" --out "$G_OUT/report.pdf" --html "$G_OUT/report.html" >/dev/null 2>&1); then
+  emit_fail "monotone spec should have failed the gate, but build succeeded"
+else
+  emit_pass "monotone spec fails the build (stdev floor fires)"
 fi
 
 #--------------------------------------------------------------------------------

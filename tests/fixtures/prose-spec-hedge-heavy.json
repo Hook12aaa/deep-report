@@ -1,0 +1,18 @@
+{
+  "section_id": "intro",
+  "purpose": "Integration test hedge-heavy fixture.",
+  "audience": "general",
+  "thesis": "Hedges might fail the gate.",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "topic_sentence": "It may rain, or it might snow.",
+      "claims": [
+        {"claim": "Forecasts could shift overnight, and rain may follow.", "evidence_refs": ["x"]},
+        {"claim": "Models often disagree, and outputs might diverge.", "evidence_refs": ["x"]},
+        {"claim": "Results may vary, and the floor could shift.", "evidence_refs": ["x"]}
+      ],
+      "max_words": 80
+    }
+  ]
+}

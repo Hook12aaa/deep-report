@@ -1,0 +1,26 @@
+{
+  "section_id": "intro",
+  "purpose": "Integration test passing fixture.",
+  "audience": "technical",
+  "thesis": "Spec renders and passes the gate.",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "topic_sentence": "Spec-driven prose passes the measurement gate when paragraph blocks are concise and varied.",
+      "claims": [
+        {"claim": "The Coleman-Liau index lands in the correct readability band for technical content.", "evidence_refs": ["task-23"]},
+        {"claim": "Sentence length alternates enough to satisfy the standard deviation requirement.", "evidence_refs": ["task-23"]},
+        {"claim": "Few word pairs repeat, keeping the bigram repetition percentage below the limit.", "evidence_refs": ["task-23"]}
+      ],
+      "max_words": 100
+    },
+    {
+      "type": "why_it_matters",
+      "stake": "This test runs every prose metric against real rendered output."
+    },
+    {
+      "type": "bullets",
+      "items": ["readability index in range", "sentence variance above floor", "bigram score under cap"]
+    }
+  ]
+}
